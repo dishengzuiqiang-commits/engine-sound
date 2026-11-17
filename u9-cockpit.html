@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#060911">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>仰望 U9 电磁声浪座舱</title>
+<style>
+  :root{
+    --bg:#060911; --panel:#0d121c; --line:rgba(56,189,248,.18);
+    --txt:#e9eef6; --dim:#8b95a3; --cyan:#38bdf8; --indigo:#818cf8;
+    --rose:#f43f5e; --emerald:#34d399; --amber:#fbbf24;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;user-select:none}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overscroll-behavior:none;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  body{padding:calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:10px;min-height:100%}
+  .panel{background:linear-gradient(165deg,rgba(17,24,39,.92),rgba(9,13,22,.96));
+    border:1px solid var(--line);border-radius:16px;box-shadow:0 14px 34px rgba(0,0,0,.6)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding-bottom:8px;border-bottom:1px solid rgba(56,189,248,.16);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:8px;min-width:0}
+  .logo{width:34px;height:34px;border-radius:10px;flex:0 0 auto;display:grid;place-items:center;
+    background:linear-gradient(135deg,#06b6d4,#2563eb 60%,#4338ca);box-shadow:0 0 18px rgba(56,189,248,.35);font-size:18px}
+  .title{font-size:14px;font-weight:800;letter-spacing:.5px;
+    background:linear-gradient(90deg,#67e8f9,#bae6fd,#a5b4fc);-webkit-background-clip:text;background-clip:text;color:transparent;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .subtitle{font-size:10px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tools{display:flex;align-items:center;gap:6px}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  .btn{padding:7px 10px;border-radius:11px;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:6px;
+    background:#0f1520;border:1px solid #1f2937;transition:.15s}
+  .btn:active{transform:scale(.97)}
+  .btn.gps{border-color:rgba(52,211,153,.4);color:#6ee7b7}
+  .btn.gps.on{border-color:var(--emerald);color:#bbf7d0;box-shadow:0 0 16px rgba(52,211,153,.25)}
+  .btn.power{border-color:rgba(56,189,248,.4);color:#7dd3fc}
+  .btn.power.on{border-color:var(--cyan);color:#e0f2fe;box-shadow:0 0 16px rgba(56,189,248,.3)}
+  .led{width:8px;height:8px;border-radius:50%;background:#64748b}
+  .led.ok{background:var(--emerald);box-shadow:0 0 8px var(--emerald)}
+  .led.warn{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+  .led.off{background:#64748b}
+  .led.mute{background:var(--rose);box-shadow:0 0 8px var(--rose)}
+
+  main{display:grid;gap:10px;grid-template-columns:1fr}
+  @media(min-width:900px){main{grid-template-columns:1.35fr 1fr}}
+  .stack{display:flex;flex-direction:column;gap:10px}
+
+  .gpsbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px}
+  .gpsbar .t1{font-size:11.5px;font-weight:700;color:#6ee7b7}
+  .gpsbar .t2{font-size:10.5px;color:var(--dim);margin-top:2px}
+  .badge{font-size:10px;font-family:ui-monospace,Menlo,monospace;padding:3px 7px;border-radius:8px;
+    background:#131a26;border:1px solid #1f2937;color:#cbd5e1;white-space:nowrap}
+
+  .dash{padding:14px;position:relative;overflow:hidden}
+  .dash:before{content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(circle at 50% 0,rgba(56,189,248,.12),transparent 65%)}
+  .speedrow{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;position:relative;z-index:1}
+  .label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);font-weight:700}
+  .speed{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+  #speedDisplay{font-size:clamp(46px,13vw,76px);line-height:1;font-weight:900;letter-spacing:-2px;
+    font-variant-numeric:tabular-nums;text-shadow:0 0 24px rgba(56,189,248,.45)}
+  .unit{font-size:13px;font-weight:700;color:var(--cyan)}
+  .rightinfo{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .chip{font-size:10.5px;padding:4px 9px;border-radius:10px;background:rgba(56,189,248,.12);
+    border:1px solid rgba(56,189,248,.3);color:#7dd3fc;font-weight:700;white-space:nowrap}
+  .state{font-size:10px;font-family:ui-monospace,Menlo,monospace;color:var(--dim)}
+  .canvaswrap{position:relative;height:96px;margin:10px 0;border-radius:14px;overflow:hidden;
+    background:rgba(0,0,0,.55);border:1px solid rgba(56,189,248,.18)}
+  #spec{width:100%;height:100%;display:block}
+  .tag{position:absolute;top:5px;font-size:9.5px;font-family:ui-monospace,Menlo,monospace;pointer-events:none}
+  .tag.l{left:8px;color:rgba(103,232,249,.85)} .tag.r{right:8px;color:rgba(165,180,252,.85)}
+  .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;position:relative;z-index:1}
+  .metric{background:rgba(0,0,0,.38);border:1px solid #18202c;border-radius:11px;padding:7px 7px 8px;min-width:0}
+  .metric span.k{display:block;font-size:9px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .metric span.v{display:block;font-size:11px;font-family:ui-monospace,Menlo,monospace;font-weight:700;margin-top:2px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .track{height:3px;border-radius:99px;background:#1b2331;overflow:hidden;margin-top:5px}
+  .track i{display:block;height:100%;width:0;border-radius:99px;transition:width .08s linear}
+
+  .pedals{display:grid;grid-template-columns:2fr 3fr;gap:8px}
+  .pedal{position:relative;height:112px;border-radius:14px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:4px;touch-action:none;transition:transform .06s,box-shadow .06s,border-color .06s;
+    background:linear-gradient(145deg,#0f172a,#1e293b);border:2px solid rgba(56,189,248,.4);
+    box-shadow:0 10px 22px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.1)}
+  .pedal.brake{background:linear-gradient(145deg,#18181b,#09090b);border-color:rgba(244,63,94,.35)}
+  .pedal.pressed{transform:scale(.965)}
+  .pedal.pressed.throttle{border-color:var(--cyan);background:linear-gradient(145deg,#0c4a6e,#0f172a);
+    box-shadow:0 0 26px rgba(56,189,248,.45),inset 0 3px 8px rgba(0,0,0,.6)}
+  .pedal.pressed.brake{border-color:var(--rose);background:linear-gradient(145deg,#4c0519,#18181b);
+    box-shadow:0 0 26px rgba(244,63,94,.45),inset 0 3px 8px rgba(0,0,0,.6)}
+  .pedal .cap{width:34px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:9px;font-weight:900;
+    border:1px solid rgba(255,255,255,.2);color:#7dd3fc;
+    background:repeating-linear-gradient(0deg,rgba(255,255,255,.07),rgba(255,255,255,.07) 4px,transparent 4px,transparent 8px)}
+  .pedal.brake .cap{color:#fda4af;border-color:rgba(244,63,94,.25)}
+  .pedal .name{font-size:12.5px;font-weight:800;letter-spacing:.06em}
+  .pedal .hint2{font-size:9.5px;color:rgba(148,163,184,.9)}
+  .pedal .bar{width:74%;height:5px;border-radius:99px;background:rgba(0,0,0,.6);overflow:hidden;margin-top:4px}
+  .pedal .bar i{display:block;height:100%;width:0;background:var(--cyan)}
+
+  .section{padding:12px}
+  .h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .h .t{font-size:12px;font-weight:800;letter-spacing:.04em}
+  .link{font-size:11px;color:var(--cyan);font-weight:700}
+  .row{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:#cbd5e1}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-weight:700;color:#7dd3fc}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;touch-action:pan-y}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:#1e293b}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    margin-top:-6px;background:var(--cyan);box-shadow:0 0 12px rgba(56,189,248,.7)}
+  input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:#1e293b}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:0;border-radius:50%;background:var(--cyan)}
+  .presets{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .preset{padding:9px 6px;border-radius:11px;font-size:11px;font-weight:700;text-align:center;
+    background:#0f1520;border:1px solid #1f2937;color:#cbd5e1;line-height:1.35}
+  .preset small{display:block;font-size:9.5px;font-weight:400;opacity:.75}
+  .preset.on{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.6);color:#bae6fd;
+    box-shadow:0 0 14px rgba(56,189,248,.2)}
+  .mixer{display:none;border-top:1px solid #18202c;margin-top:10px;padding-top:10px;
+    grid-template-columns:1fr 1fr;gap:8px}
+  .mixer.open{display:grid}
+  .knob{background:rgba(0,0,0,.32);border:1px solid #18202c;border-radius:10px;padding:7px 8px}
+  .knob .row{font-size:10.5px;color:#cbd5e1}
+  .foot{font-size:10px;color:#64748b;text-align:center;line-height:1.6;padding-bottom:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">⚡</div>
+    <div style="min-width:0">
+      <div class="title">仰望 U9 电磁声浪座舱</div>
+      <div class="subtitle">GPS 随速联动 · 离线可用</div>
+    </div>
+  </div>
+  <div class="tools">
+    <button id="gpsBtn" class="btn gps"><span id="gpsLed" class="led off"></span><span id="gpsText">GPS 测速</span></button>
+    <button id="powerBtn" class="btn power"><span id="powerLed" class="led warn"></span><span id="powerText">解锁声音</span></button>
+  </div>
+</header>
+
+<main>
+  <section class="stack">
+    <div class="panel gpsbar">
+      <div style="min-width:0">
+        <div class="t1" id="gpsTitle">GPS 随速：未开启（手动踏板）</div>
+        <div class="t2" id="gpsDetail">开启后按真实移动速度自动匹配声浪</div>
+      </div>
+      <span class="badge" id="gpsBadge">手动</span>
+    </div>
+
+    <div class="panel dash">
+      <div class="speedrow">
+        <div>
+          <div class="label">实时车速</div>
+          <div class="speed"><span id="speedDisplay">0</span><span class="unit">km/h</span></div>
+        </div>
+        <div class="rightinfo">
+          <span class="chip" id="zoneBadge">怠速待命</span>
+          <span class="state" id="stateBadge">按住加速踏板</span>
+        </div>
+      </div>
+
+      <div class="canvaswrap">
+        <canvas id="spec"></canvas>
+        <div class="tag l">逆变器 <span id="invFreq">42</span> Hz</div>
+        <div class="tag r">涡轮 <span id="turbFreq">180</span> Hz</div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric"><span class="k">电机转速</span><span class="v" id="rpmV" style="color:#7dd3fc">0 rpm</span><div class="track"><i id="rpmBar" style="background:#38bdf8"></i></div></div>
+        <div class="metric"><span class="k">输出功率</span><span class="v" id="powV" style="color:#a5b4fc">0 kW</span><div class="track"><i id="powBar" style="background:#818cf8"></i></div></div>
+        <div class="metric"><span class="k">电门开度</span><span class="v" id="thrV" style="color:#6ee7b7">0 %</span><div class="track"><i id="thrBar" style="background:#34d399"></i></div></div>
+        <div class="metric"><span class="k">滤波截止</span><span class="v" id="lpfV" style="color:#7dd3fc">220 Hz</span><div class="track"><i id="lpfBar" style="background:#38bdf8"></i></div></div>
+      </div>
+    </div>
+
+    <div class="panel section">
+      <div class="h">
+        <span class="t">9 秒演示</span>
+        <button id="demoBtn" class="btn" style="border-color:rgba(56,189,248,.4);color:#7dd3fc">播放</button>
+      </div>
+      <div class="t2" id="demoText" style="font-size:10.5px;color:#94a3b8;margin-top:4px">起步强磁嗡鸣 → 丝滑提速 → 松油门滑行</div>
+      <div class="track" style="margin-top:8px;height:4px"><i id="demoBar" style="background:linear-gradient(90deg,#38bdf8,#818cf8)"></i></div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <div class="panel section">
+      <div class="h" style="margin-bottom:8px">
+        <span class="t">驾驶踏板</span>
+        <span class="t2" style="font-size:10px;color:#64748b">长按；电脑空格加速 / S 刹车</span>
+      </div>
+      <div class="pedals">
+        <button id="brake" class="pedal brake"><span class="cap">BRAKE</span><span class="name">刹车</span><span class="hint2">按住减速</span></button>
+        <button id="throttle" class="pedal throttle"><span class="cap">⚡</span><span class="name">按住加速</span><span class="hint2">松手保持巡航</span><span class="bar"><i id="pedalBar"></i></span></button>
+      </div>
+      <div style="border-top:1px solid #18202c;margin-top:10px;padding-top:9px">
+        <div class="row"><span>定速巡航</span><span class="mono" id="cruiseV">0%（未锁定）</span></div>
+        <input id="cruise" type="range" min="0" max="100" value="0">
+      </div>
+    </div>
+
+    <div class="panel section">
+      <div class="h" style="margin-bottom:8px">
+        <span class="t">声学调校</span>
+        <button class="link" id="mixToggle">展开调音台</button>
+      </div>
+      <div class="presets">
+        <button class="preset on" data-p="video">视频原声<small>均衡饱满</small></button>
+        <button class="preset" data-p="deep">深渊低鸣<small>胸口共鸣</small></button>
+        <button class="preset" data-p="warp">曲率星舰<small>科幻涡轮</small></button>
+      </div>
+      <div class="mixer" id="mixer">
+        <div class="knob"><div class="row"><span>低频底座</span><span class="mono" id="subV">100%</span></div><input id="sub" type="range" min="0" max="150" value="100"></div>
+        <div class="knob"><div class="row"><span>逆变器</span><span class="mono" id="invV">100%</span></div><input id="inv" type="range" min="0" max="150" value="100"></div>
+        <div class="knob"><div class="row"><span>电磁涡轮</span><span class="mono" id="turbV">90%</span></div><input id="turb" type="range" min="0" max="150" value="90"></div>
+        <div class="knob"><div class="row"><span>声场混响</span><span class="mono" id="revV">40%</span></div><input id="rev" type="range" min="0" max="150" value="40"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="foot">手机浏览器打开即可使用 · 建议耳机或车里音响播放<br>GPS 测速在 file:// 下会被浏览器拦截，需要 https 或 localhost</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- 声浪引擎 ---------------- */
+  function SoundEngine(){
+    this.ctx=null; this.ready=false; this.muted=false;
+    this.mix={sub:1,inverter:1,turbine:.9,reverb:.4};
+  }
+  SoundEngine.prototype.init=function(){
+    if(this.ready){ if(this.ctx.state==="suspended") this.ctx.resume(); return; }
+    var AC=window.AudioContext||window.webkitAudioContext;
+    var ctx=this.ctx=new AC({latencyHint:"interactive"});
+    var now=ctx.currentTime;
+
+    // iOS 解锁
+    var b=ctx.createBuffer(1,1,22050), s=ctx.createBufferSource();
+    s.buffer=b; s.connect(ctx.destination); s.start(0);
+
+    var hpf=ctx.createBiquadFilter(); hpf.type="highpass"; hpf.frequency.value=28; hpf.Q.value=.707;
+    var body=ctx.createBiquadFilter(); body.type="peaking"; body.frequency.value=95; body.Q.value=.9; body.gain.value=2.2;
+    var lpf=ctx.createBiquadFilter(); lpf.type="lowpass"; lpf.frequency.value=320; lpf.Q.value=.65;
+    var comp=ctx.createDynamicsCompressor();
+    comp.threshold.value=-10; comp.knee.value=12; comp.ratio.value=6; comp.attack.value=.015; comp.release.value=.25;
+    var master=ctx.createGain(); master.gain.value=.58;
+    var analyser=ctx.createAnalyser(); analyser.fftSize=256; analyser.smoothingTimeConstant=.85;
+
+    // 纯净立体声场：双延迟替代噪声卷积
+    var dl=ctx.createDelay(.1), dr=ctx.createDelay(.1);
+    dl.delayTime.value=.019; dr.delayTime.value=.027;
+    var spaceLP=ctx.createBiquadFilter(); spaceLP.type="lowpass"; spaceLP.frequency.value=650;
+    var merger=ctx.createChannelMerger(2);
+    var wet=ctx.createGain(); wet.gain.value=this.mix.reverb*.22;
+
+    lpf.connect(hpf); hpf.connect(body); body.connect(comp);
+    body.connect(spaceLP); spaceLP.connect(dl); spaceLP.connect(dr);
+    dl.connect(merger,0,0); dr.connect(merger,0,1);
+    merger.connect(wet); wet.connect(comp);
+    comp.connect(master); master.connect(analyser); analyser.connect(ctx.destination);
+
+    this.lpf=lpf; this.master=master; this.analyser=analyser; this.wet=wet;
+
+    // 1) 次低频底座
+    var subG=ctx.createGain(); subG.gain.value=0;
+    var s1=ctx.createOscillator(), s2=ctx.createOscillator();
+    s1.type="sine"; s2.type="sine"; s1.frequency.value=40; s2.frequency.value=80;
+    var g1=ctx.createGain(), g2=ctx.createGain(); g1.gain.value=.68; g2.gain.value=.32;
+    s1.connect(g1); s2.connect(g2); g1.connect(subG); g2.connect(subG); subG.connect(lpf);
+    s1.start(); s2.start();
+
+    // 2) 逆变器层（自定义平滑傅里叶波，无锯齿毛刺）
+    var real=new Float32Array(7), imag=new Float32Array([0,1,.52,.28,.14,.07,.03]);
+    var wave=ctx.createPeriodicWave(real,imag,{disableNormalization:false});
+    var invG=ctx.createGain(); invG.gain.value=0;
+    var i1=ctx.createOscillator(), i2=ctx.createOscillator();
+    i1.setPeriodicWave(wave); i2.type="triangle";
+    i1.frequency.value=54; i2.frequency.value=108.5;
+    var ig1=ctx.createGain(), ig2=ctx.createGain(); ig1.gain.value=.5; ig2.gain.value=.5;
+    var iF=ctx.createBiquadFilter(); iF.type="lowpass"; iF.frequency.value=220; iF.Q.value=.707;
+    i1.connect(ig1); i2.connect(ig2); ig1.connect(iF); ig2.connect(iF); iF.connect(invG); invG.connect(lpf);
+    i1.start(); i2.start();
+
+    // 3) 涡轮层
+    var turG=ctx.createGain(); turG.gain.value=0;
+    var t1=ctx.createOscillator(), t2=ctx.createOscillator();
+    t1.type="sine"; t2.type="sine"; t1.frequency.value=210; t2.frequency.value=315;
+    var tg1=ctx.createGain(), tg2=ctx.createGain(); tg1.gain.value=.72; tg2.gain.value=.24;
+    t1.connect(tg1); t2.connect(tg2); tg1.connect(turG); tg2.connect(turG); turG.connect(lpf);
+    t1.start(); t2.start();
+
+    this.subG=subG; this.s1=s1; this.s2=s2;
+    this.invG=invG; this.i1=i1; this.i2=i2; this.iF=iF;
+    this.turG=turG; this.t1=t1; this.t2=t2;
+
+    this.ready=true;
+    if(ctx.state==="suspended") ctx.resume();
+  };
+  SoundEngine.prototype.toggleMute=function(){
+    if(!this.ready) return null;
+    this.muted=!this.muted;
+    this.master.gain.setTargetAtTime(this.muted?0:.58,this.ctx.currentTime,.06);
+    return this.muted;
+  };
+  SoundEngine.prototype.setMix=function(m){
+    for(var k in m) this.mix[k]=m[k];
+    if(this.ready&&this.wet) this.wet.gain.setTargetAtTime(this.mix.reverb*.22,this.ctx.currentTime,.06);
+  };
+  SoundEngine.prototype.update=function(speed,throttle){
+    if(!this.ready||this.muted) return {invFreq:42,turbFreq:180,lpf:220};
+    var now=this.ctx.currentTime, maxSpeed=300, n=Math.min(1,speed/maxSpeed);
+
+    if(speed<=.3&&throttle<=.01){
+      this.subG.gain.setTargetAtTime(0,now,.12);
+      this.invG.gain.setTargetAtTime(0,now,.12);
+      this.turG.gain.setTargetAtTime(0,now,.12);
+      return {invFreq:42,turbFreq:180,lpf:220};
+    }
+
+    var eff=speed>90?90+(speed-90)*.30:speed;
+    var subF=40+n*72+throttle*7;
+    var invF=52+n*180+throttle*16;
+    var turF=195+(eff/maxSpeed)*720+throttle*60;
+
+    var accel=throttle>.03;
+    var lp=Math.min(1,Math.max(0,speed/60));
+    var presence=speed<=60?.88+lp*.12:1;
+    var tsg,tig,ttg,tlpf;
+
+    if(accel){
+      tsg=(.24+n*.08+throttle*.06)*presence*this.mix.sub;
+      tig=(.22+n*.08+throttle*.06)*presence*this.mix.inverter;
+      ttg=(.11+(eff/maxSpeed)*.09+throttle*.04)*presence*this.mix.turbine;
+      tlpf=330+n*540+throttle*160;
+    }else{
+      var coast=Math.min(1,.5+(speed/60)*.5);
+      tsg=.19*coast*this.mix.sub;
+      tig=.18*coast*this.mix.inverter;
+      ttg=.08*coast*this.mix.turbine;
+      tlpf=260+n*300;
+    }
+
+    this.s1.frequency.setTargetAtTime(subF,now,.07);
+    this.s2.frequency.setTargetAtTime(subF*2,now,.07);
+    this.subG.gain.setTargetAtTime(tsg,now,.09);
+
+    this.i1.frequency.setTargetAtTime(invF,now,.07);
+    this.i2.frequency.setTargetAtTime(invF*2.005,now,.07);
+    this.iF.frequency.setTargetAtTime(invF*3.2+throttle*95,now,.08);
+    this.invG.gain.setTargetAtTime(tig,now,.09);
+
+    this.t1.frequency.setTargetAtTime(turF,now,.07);
+    this.t2.frequency.setTargetAtTime(turF*1.5,now,.07);
+    this.turG.gain.setTargetAtTime(ttg,now,.09);
+
+    this.lpf.frequency.setTargetAtTime(tlpf,now,.09);
+    return {invFreq:Math.round(invF),turbFreq:Math.round(turF),lpf:Math.round(tlpf)};
+  };
+  SoundEngine.prototype.spectrum=function(){
+    if(!this.ready||!this.analyser) return null;
+    var a=new Uint8Array(this.analyser.frequencyBinCount);
+    this.analyser.getByteFrequencyData(a);
+    return a;
+  };
+
+  /* ---------------- 座舱控制器 ---------------- */
+  var $=function(id){return document.getElementById(id)};
+  var sound=new SoundEngine();
+
+  var speed=0, throttle=0, throttleHeld=false, brakeHeld=false, keyAccel=false, keyBrake=false;
+  var cruiseLock=0;
+  var gpsActive=false, gpsWatch=null, gpsTarget=0, gpsPrev=0, gpsThr=0, lastC=null, lastT=0;
+  var demoActive=false, demoStart=0, DEMO_MS=9000;
+
+  var el={
+    gpsBtn:$("gpsBtn"),gpsLed:$("gpsLed"),gpsText:$("gpsText"),
+    gpsTitle:$("gpsTitle"),gpsDetail:$("gpsDetail"),gpsBadge:$("gpsBadge"),
+    powerBtn:$("powerBtn"),powerLed:$("powerLed"),powerText:$("powerText"),
+    speed:$("speedDisplay"),zone:$("zoneBadge"),state:$("stateBadge"),
+    inv:$("invFreq"),turb:$("turbFreq"),
+    rpmV:$("rpmV"),rpmBar:$("rpmBar"),powV:$("powV"),powBar:$("powBar"),
+    thrV:$("thrV"),thrBar:$("thrBar"),lpfV:$("lpfV"),lpfBar:$("lpfBar"),
+    pedalBar:$("pedalBar"),cruise:$("cruise"),cruiseV:$("cruiseV"),
+    throttle:$("throttle"),brake:$("brake"),
+    demoBtn:$("demoBtn"),demoText:$("demoText"),demoBar:$("demoBar"),
+    mixToggle:$("mixToggle"),mixer:$("mixer"),
+    canvas:$("spec")
+  };
+  var ctx2d=el.canvas.getContext("2d");
+
+  function unlock(){
+    sound.init();
+    if(sound.ready && !sound.muted){
+      el.powerLed.className="led ok"; el.powerText.textContent="声浪就绪";
+      el.powerBtn.classList.add("on");
+    }
+  }
+
+  function toggleGPS(){
+    unlock();
+    if(gpsActive){ stopGPS("已切换回手动踏板"); return; }
+    if(!navigator.geolocation){
+      el.gpsTitle.textContent="这台设备不支持定位";
+      el.gpsDetail.textContent="请用手机浏览器在 https 页面打开";
+      return;
+    }
+    if(demoActive) stopDemo();
+    gpsActive=true;
+    el.gpsLed.className="led warn"; el.gpsText.textContent="定位中";
+    el.gpsTitle.textContent="正在搜星…";
+    el.gpsDetail.textContent="浏览器弹窗里请点「允许」";
+    el.gpsBadge.textContent="搜索中";
+
+    gpsWatch=navigator.geolocation.watchPosition(function(p){
+      var acc=p.coords.accuracy?Math.round(p.coords.accuracy):0;
+      el.gpsLed.className="led ok"; el.gpsText.textContent="GPS 开";
+      el.gpsBadge.textContent="±"+acc+"m";
+
+      var mps=p.coords.speed, t=p.timestamp||Date.now();
+      if((mps===null||mps===undefined||isNaN(mps))&&lastC){
+        var dt=(t-lastT)/1000;
+        if(dt>.2) mps=haversine(lastC.lat,lastC.lon,p.coords.latitude,p.coords.longitude)/dt;
+      }
+      lastC={lat:p.coords.latitude,lon:p.coords.longitude}; lastT=t;
+
+      var kmh=(mps&&mps>0)?mps*3.6:0;
+      if(kmh<1.8) kmh=0;
+      var d=kmh-gpsPrev; gpsPrev=kmh;
+      gpsTarget=Math.min(300,kmh);
+
+      if(gpsTarget===0) gpsThr=0;
+      else if(d>.3) gpsThr=Math.min(1,.35+(d/5)*.65);
+      else gpsThr=Math.min(.45,.15+(gpsTarget/120)*.25);
+
+      el.gpsTitle.textContent="GPS 已连接 · "+Math.round(gpsTarget)+" km/h";
+      el.gpsDetail.textContent="提速自动加速声浪，减速转为巡航嗡鸣";
+    },function(err){
+      var msg="定位失败，请确认已开位置权限";
+      if(err.code===1) msg="位置权限被拒绝";
+      else if(err.code===2) msg="搜不到卫星，去空旷处试试";
+      else if(err.code===3) msg="搜星超时";
+      stopGPS(msg);
+    },{enableHighAccuracy:true,maximumAge:0,timeout:10000});
+  }
+  function stopGPS(msg){
+    gpsActive=false;
+    if(gpsWatch!==null&&navigator.geolocation){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
+    gpsTarget=0; gpsThr=0;
+    el.gpsLed.className="led off"; el.gpsText.textContent="GPS 测速";
+    el.gpsTitle.textContent="GPS 随速：未开启（手动踏板）";
+    el.gpsDetail.textContent=msg||"开启后按真实移动速度自动匹配声浪";
+    el.gpsBadge.textContent="手动";
+  }
+  function haversine(a,b,c,d){
+    var R=6371000,t=Math.PI/180;
+    var x=Math.sin((c-a)*t/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin((d-b)*t/2)**2;
+    return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+  }
+
+  function setPreset(k){
+    document.querySelectorAll(".preset").forEach(function(b){
+      b.classList.toggle("on",b.dataset.p===k);
+    });
+    var vals={video:[100,100,90,40],deep:[120,115,60,45],warp:[90,95,120,55]}[k];
+    $("sub").value=vals[0]; $("inv").value=vals[1]; $("turb").value=vals[2]; $("rev").value=vals[3];
+    syncMix();
+  }
+  function syncMix(){
+    var s=+$("sub").value, i=+$("inv").value, t=+$("turb").value, r=+$("rev").value;
+    sound.setMix({sub:s/100,inverter:i/100,turbine:t/100,reverb:r/100});
+    $("subV").textContent=s+"%"; $("invV").textContent=i+"%";
+    $("turbV").textContent=t+"%"; $("revV").textContent=r+"%";
+  }
+
+  el.throttle.addEventListener("pointerdown",function(e){
+    e.preventDefault(); unlock(); if(demoActive) stopDemo();
+    throttleHeld=true; el.throttle.classList.add("pressed");
+  });
+  ["pointerup","pointercancel"].forEach(function(ev){
+    el.throttle.addEventListener(ev,function(){throttleHeld=false;el.throttle.classList.remove("pressed")});
+  });
+  window.addEventListener("pointerup",function(){throttleHeld=false;el.throttle.classList.remove("pressed")});
+
+  el.brake.addEventListener("pointerdown",function(e){
+    e.preventDefault(); unlock(); if(demoActive) stopDemo();
+    brakeHeld=true; el.brake.classList.add("pressed");
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(function(ev){
+    el.brake.addEventListener(ev,function(){brakeHeld=false;el.brake.classList.remove("pressed")});
+  });
+
+  window.addEventListener("keydown",function(e){
+    if(e.code==="Space"||e.code==="KeyW"||e.code==="ArrowUp"){
+      e.preventDefault(); unlock(); if(demoActive) stopDemo();
+      keyAccel=true; el.throttle.classList.add("pressed");
+    } else if(e.code==="KeyS"||e.code==="ArrowDown"){
+      e.preventDefault(); unlock(); if(demoActive) stopDemo();
+      keyBrake=true; el.brake.classList.add("pressed");
+    }
+  });
+  window.addEventListener("keyup",function(e){
+    if(e.code==="Space"||e.code==="KeyW"||e.code==="ArrowUp"){
+      keyAccel=false; if(!throttleHeld) el.throttle.classList.remove("pressed");
+    } else if(e.code==="KeyS"||e.code==="ArrowDown"){
+      keyBrake=false; if(!brakeHeld) el.brake.classList.remove("pressed");
+    }
+  });
+
+  el.cruise.addEventListener("input",function(){
+    unlock(); if(demoActive) stopDemo();
+    var v=+el.cruise.value; cruiseLock=v/100;
+    el.cruiseV.textContent=v>0?v+"%（已锁定）":"0%（未锁定）";
+  });
+
+  el.powerBtn.addEventListener("click",function(){
+    if(!sound.ready){ unlock(); return; }
+    var m=sound.toggleMute();
+    if(m){ el.powerLed.className="led mute"; el.powerText.textContent="已静音"; el.powerBtn.classList.remove("on"); }
+    else { el.powerLed.className="led ok"; el.powerText.textContent="声浪就绪"; el.powerBtn.classList.add("on"); }
+  });
+
+  el.gpsBtn.addEventListener("click",toggleGPS);
+
+  el.mixToggle.addEventListener("click",function(){
+    var open=el.mixer.classList.toggle("open");
+    el.mixToggle.textContent=open?"收起调音台":"展开调音台";
+  });
+  ["sub","inv","turb","rev"].forEach(function(id){ $(id).addEventListener("input",function(){unlock();syncMix()}); });
+  document.querySelectorAll(".preset").forEach(function(b){
+    b.addEventListener("click",function(){unlock();setPreset(b.dataset.p)});
+  });
+
+  el.demoBtn.addEventListener("click",function(){
+    unlock();
+    if(demoActive){ stopDemo(); } else { startDemo(); }
+  });
+  function startDemo(){
+    demoActive=true; demoStart=performance.now(); speed=0;
+    el.demoBtn.textContent="停止"; el.demoBtn.classList.add("on");
+  }
+  function stopDemo(){
+    demoActive=false; el.demoBtn.textContent="播放"; el.demoBtn.classList.remove("on");
+    el.demoBar.style.width="0%"; el.demoText.textContent="起步强磁嗡鸣 → 丝滑提速 → 松油门滑行";
+  }
+
+  function resize(){
+    var r=el.canvas.parentElement.getBoundingClientRect();
+    if(!r.width||!r.height) return;
+    var dpr=window.devicePixelRatio||1;
+    el.canvas.width=r.width*dpr; el.canvas.height=r.height*dpr;
+    ctx2d.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener("resize",resize,{passive:true});
+  setTimeout(resize,60);
+
+  var last=performance.now();
+  function loop(now){
+    var dt=Math.min(.05,(now-last)/1000); last=now;
+
+    var target=0, braking=brakeHeld||keyBrake;
+    if(demoActive){
+      var e=now-demoStart, pct=Math.min(1,e/DEMO_MS);
+      el.demoBar.style.width=(pct*100)+"%";
+      if(e<3500){ el.demoText.textContent="阶段1：低速起步 强磁嗡鸣"; target=.72; }
+      else if(e<6500){ el.demoText.textContent="阶段2：中高速丝滑加速"; target=1; }
+      else if(e<DEMO_MS){ el.demoText.textContent="阶段3：松电门 巡航滑行"; target=0; }
+      else { stopDemo(); }
+    } else if(!braking){
+      if(throttleHeld||keyAccel) target=1;
+      else if(cruiseLock>0) target=cruiseLock;
+      else if(gpsActive) target=gpsThr;
+    }
+
+    throttle+=(target-throttle)*Math.min(1,(target>throttle?6:4.5)*dt);
+    if(throttle<.005) throttle=0;
+
+    if(gpsActive&&!demoActive&&!throttleHeld&&!keyAccel&&!braking&&cruiseLock===0){
+      speed+=(gpsTarget-speed)*Math.min(1,3.2*dt);
+      if(speed<.3&&gpsTarget===0) speed=0;
+    } else if(braking){
+      speed=Math.max(0,speed-68*dt);
+    } else if(throttle>.01){
+      speed=Math.min(300,speed+22*throttle*dt);
+    } else {
+      speed=Math.max(0,speed-11*dt);
+    }
+
+    var st=sound.update(speed,throttle);
+    var ds=Math.round(speed);
+    el.speed.textContent=ds;
+
+    if(ds===0&&throttle===0){
+      el.zone.textContent="怠速待命"; el.state.textContent="静止静音";
+    } else if(ds<=60){
+      el.zone.textContent="低速起步区"; el.state.textContent=throttle>.03?"强磁起步嗡鸣":"低速巡航";
+    } else if(ds<=90){
+      el.zone.textContent="中速过渡区"; el.state.textContent=throttle>.03?"丝滑电磁加速":"中速巡航";
+    } else {
+      el.zone.textContent="高速巡航区"; el.state.textContent=throttle>.03?"高速电磁推进":"高速滑行";
+    }
+
+    el.inv.textContent=st.invFreq; el.turb.textContent=st.turbFreq;
+
+    var rpm=(ds===0&&throttle===0)?0:Math.round(600+(speed/300)*14400+throttle*1200);
+    var power=Math.round(throttle*960+(speed/300)*180);
+    var tp=Math.round(throttle*100);
+
+    el.rpmV.textContent=rpm.toLocaleString()+" rpm";
+    el.rpmBar.style.width=Math.min(100,rpm/16000*100)+"%";
+    el.powV.textContent=power+" kW";
+    el.powBar.style.width=Math.min(100,power/1100*100)+"%";
+    el.thrV.textContent=tp+" %";
+    el.thrBar.style.width=tp+"%";
+    el.pedalBar.style.width=tp+"%";
+    el.lpfV.textContent=st.lpf+" Hz";
+    el.lpfBar.style.width=Math.min(100,st.lpf/1100*100)+"%";
+
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function draw(){
+    var w=el.canvas.parentElement.clientWidth, h=el.canvas.parentElement.clientHeight;
+    if(!w||!h) return;
+    ctx2d.clearRect(0,0,w,h);
+
+    ctx2d.strokeStyle="rgba(56,189,248,.07)"; ctx2d.lineWidth=1; ctx2d.beginPath();
+    for(var x=0;x<w;x+=28){ctx2d.moveTo(x,0);ctx2d.lineTo(x,h);}
+    for(var y=0;y<h;y+=22){ctx2d.moveTo(0,y);ctx2d.lineTo(w,y);}
+    ctx2d.stroke();
+
+    var d=sound.spectrum(); if(!d) return;
+    var n=Math.min(64,d.length), bw=w/n;
+    var g=ctx2d.createLinearGradient(0,h,0,0);
+    g.addColorStop(0,"rgba(14,165,233,.25)");
+    g.addColorStop(.55,"rgba(56,189,248,.65)");
+    g.addColorStop(1,"rgba(129,140,248,.95)");
+    ctx2d.fillStyle=g;
+    for(var i=0;i<n;i++){
+      var v=d[i]/255, bh=v*h*.88;
+      ctx2d.fillRect(i*bw+1,h-bh,Math.max(1.5,bw-2),bh);
+    }
+    ctx2d.strokeStyle="#38bdf8"; ctx2d.lineWidth=1.8; ctx2d.beginPath();
+    for(var j=0;j<n;j++){
+      var vv=d[j]/255, xx=j*bw+bw*.5, yy=h-vv*h*.88;
+      if(j===0) ctx2d.moveTo(xx,yy); else ctx2d.lineTo(xx,yy);
+    }
+    ctx2d.stroke();
+  }
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
